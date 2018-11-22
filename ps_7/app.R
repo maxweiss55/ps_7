@@ -149,7 +149,7 @@ mistakes_info <- mistakes %>%
 # Define UI for application that draws a histogram
 ui <- fluidPage(
    # Application title
-   titlePanel("Key 2018 Midterm Prediction Results: Factors for Mistakes"),
+   titlePanel("2018 Upshot Midterm Prediction Results: Factors for Mistakes"),
    
    # Sidebar with a slider input for number of bins 
    sidebarLayout(
