@@ -1,4 +1,7 @@
 
+#The following is code used to build the dataset that is used in a ShinyWebApp
+
+
 #Libraries
 library(tidyverse)
 library(stringr)
@@ -142,15 +145,3 @@ mistakes_info <- mistakes %>%
   left_join(count_raceth, by = "race") %>%
   left_join(count_gender, by = "race") %>%
   left_join(count_partyid, by = "race")
-
-mistakes_info_2 <- mistakes_info %>%
-  rename("Percent Cell (Phone)" = percent_cell, "Percent Male (Gender)" = percent_male,
-         "Percent White (Race/Ethnicity)" = percent_white, "Percent Black (Race/Ethnicity)" = percent_black, 
-         "Percent Hispanic (Race/Ethnicity)" = percent_hispanic, "Percent Asian (Race/Ethnicity)" = percent_asian,
-         "Percent Democrat (Party ID)" = percent_dem, "Percent Republican (Party ID)" = percent_rep,
-         "Percent Independent (Party ID)" = percent_ind) #Rename factors for clarity
-
-
-ggplot(mistakes_info_2, aes(x = rep_adv_difference, y = `Percent Cell (Phone)`)) +
-  geom_point() +
-  geom_smooth(method='lm')

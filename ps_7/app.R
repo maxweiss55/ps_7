@@ -146,12 +146,12 @@ mistakes_info <- mistakes %>%
                                win_actual == "D" ~ "Democrat"))
 
 
-# Define UI for application that draws a histogram
+# Define UI for application that draws a ggplot
 ui <- fluidPage(
    # Application title
    titlePanel("2018 Upshot Midterm Prediction Results: Factors for Mistakes"),
    
-   # Sidebar with a slider input for number of bins 
+   # Sidebar with a selector for Factors
    sidebarLayout(
       sidebarPanel(
         selectInput("factor", "Factor:", c("Percent Cell (Phone)", "Percent Male (Gender)",
@@ -195,6 +195,8 @@ server <- function(input, output) {
    
    output$scatter <- renderPlot({
     
+     #Use a series of if/elseif statements to determine which scatterplot is presented
+     
      if (input$factor == "Percent Cell (Phone)") {
       mistakes_info %>%
         ggplot(aes(x = percent_cell, y = rep_adv_difference, color = win_actual)) +
