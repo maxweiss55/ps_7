@@ -46,7 +46,9 @@ big_named <- big_table %>%
 file_delete(c("upshot.zip", "2018-live-poll-results-master")) #Delete superfluous files
 
 #Thank you to Mr. Shroeder for compiling this data table of actual results!
-actual_res <- read_csv("actual_results.csv")
+actual_res <- read_csv("actual_results.csv") %>%
+  mutate(win_name = ifelse(win_name == "Mia Love", "Ben McAdams", win_name)) %>%
+  mutate(win_party = ifelse(win_name == "Ben McAdams", "D", win_party)) #Fix mistakes found in data
 
 advantage_pred <- big_named %>%
   group_by(response, race) %>%
@@ -89,10 +91,61 @@ advantage_pred_std <- advantage_pred %>%
 
 #Left join the predicted and actual republican advantages by state district
 predict_actual <- left_join(advantage_pred_std, actual_processed, by = "state_dist") %>%
+  filter(position == "House") %>% #Only use House predictions for more accurate comparisons
   select(race, state_dist, position, rep_adv, rep_adv_actual, win_party)
 
 mistakes <- predict_actual %>%
   mutate(win_predicted = ifelse(rep_adv > 0, "R", "D"),
-         accuracy = ifelse(win_predicted == win_party, "Correct", "Incorrect"))
+         accuracy = ifelse(win_predicted == win_party, "Correct", "Incorrect"),
+         rep_adv_difference = rep_adv_actual - rep_adv) %>% #Democrats overperforming yields a NEGATIVE difference 
+  rename(win_actual = win_party)
 
+count_phone <- big_named %>% 
+  filter(position == "House") %>%
+  group_by(race) %>%
+  count(phone_type) %>%
+  spread(phone_type, n) %>%
+  mutate(`percent_cell` = `Cell` / (`Cell` + `Landline`)) %>%
+  select(race, percent_cell)
+
+count_raceth <- big_named %>% 
+  filter(position == "House") %>%
+  group_by(race) %>%
+  count(race_eth) %>%
+  spread(race_eth, n) %>%
+  mutate(total = `[DO NOT READ] Don't know/Refused` + `Asian` + `Black` + 
+                 `Hispanic` + `Other` + `White`,
+         percent_white = `White` / total,
+         percent_black = `Black` / total,
+         percent_hispanic = `Hispanic` / total,
+         percent_asian = `Asian` / total) %>%
+  select(race, percent_white, percent_black, percent_hispanic, percent_asian)
+
+count_gender <- big_named %>% 
+  filter(position == "House") %>%
+  group_by(race) %>%
+  count(gender) %>%
+  spread(gender, n) %>%
+  select(- `[DO NOT READ] Don't know/Refused`) %>%
+  mutate(total = `Female` + `Male`,
+         percent_male = `Male` / total) %>%
+  select(race, percent_male)
+
+count_partyid <- big_named %>% 
+  filter(position == "House") %>%
+  group_by(race) %>%
+  count(partyid) %>%
+  spread(partyid, n) %>%
+  select(- `[DO NOT READ] Don't know/Refused`, - `[DO NOT READ] Refused`, - `or as a member of another political party`) %>%
+  mutate(total = Democrat + `Independent (No party)` + Republican,
+         percent_dem = Democrat / total,
+         percent_rep = Republican / total,
+         percent_ind = `Independent (No party)` / total) %>%
+  select(race, percent_dem, percent_rep, percent_ind)
+
+mistakes_info <- mistakes %>%
+  left_join(count_phone, by = "race") %>%
+  left_join(count_raceth, by = "race") %>%
+  left_join(count_gender, by = "race") %>%
+  left_join(count_partyid, by = "race")
 
