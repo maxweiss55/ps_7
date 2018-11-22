@@ -11,7 +11,7 @@ library(knitr)
 library(scales)
 library(shiny)
 
-upshot_zip <- download.file(url = "https://goo.gl/ZRCBda",
+upshot_zip <- download.file(url = "https://github.com/TheUpshot/2018-live-poll-results/archive/master.zip",
                             destfile = "upshot.zip",
                             quiet = TRUE,
                             mode = "wb") #Download Upshot data zipfile
