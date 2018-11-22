@@ -1,20 +1,12 @@
+
+#Libraries
 library(tidyverse)
 library(stringr)
 library(fs)
-library(dplyr)
-library(rebus)
-library(tools)
-library(readxl)
 library(janitor)
 library(knitr)
 library(scales)
-library(purrr)
-library(lubridate)
-library(kableExtra)
-library(haven)
-library(foreign)
 library(shiny)
-library(scales)
 
 upshot_zip <- download.file(url = "https://goo.gl/ZRCBda",
                             destfile = "upshot.zip",
@@ -97,55 +89,68 @@ predict_actual <- left_join(advantage_pred_std, actual_processed, by = "state_di
 mistakes <- predict_actual %>%
   mutate(win_predicted = ifelse(rep_adv > 0, "R", "D"),
          accuracy = ifelse(win_predicted == win_party, "Correct", "Incorrect"),
-         rep_adv_difference = rep_adv_actual - rep_adv) %>% #Democrats overperforming yields a NEGATIVE difference 
+         rep_adv_difference = rep_adv_actual - rep_adv) %>%
+  #Democrats overperforming yields a NEGATIVE rep_adv_difference 
+  #Republicans overperforming yields a POSITIVE rep_adv_difference 
   rename(win_actual = win_party)
 
 count_phone <- big_named %>% 
-  filter(position == "House") %>%
+  filter(position == "House") %>% #Only use house races for more accurate comparison
   group_by(race) %>%
-  count(phone_type) %>%
+  count(phone_type) %>% #Count the number of each phone type used per race survey
   spread(phone_type, n) %>%
-  mutate(`percent_cell` = `Cell` / (`Cell` + `Landline`)) %>%
+  mutate(`percent_cell` = `Cell` / (`Cell` + `Landline`)) %>% #Find the percent of polls where cell phones were used
   select(race, percent_cell)
 
 count_raceth <- big_named %>% 
-  filter(position == "House") %>%
+  filter(position == "House") %>% #Only use house races for more accurate comparison
   group_by(race) %>%
-  count(race_eth) %>%
+  count(race_eth) %>% #Count the number of each race/ethnicity used per race survey
   spread(race_eth, n) %>%
-  mutate(total = `[DO NOT READ] Don't know/Refused` + `Asian` + `Black` + 
-                 `Hispanic` + `Other` + `White`,
+  mutate(total = `Asian` + `Black` + `Hispanic` + `Other` + `White`, #Do not include refusals because not informative or impactful enough
          percent_white = `White` / total,
          percent_black = `Black` / total,
          percent_hispanic = `Hispanic` / total,
-         percent_asian = `Asian` / total) %>%
+         percent_asian = `Asian` / total) %>% #Find the percent of polls with White, Black, Hispanic, and Asian respondents
   select(race, percent_white, percent_black, percent_hispanic, percent_asian)
 
 count_gender <- big_named %>% 
-  filter(position == "House") %>%
+  filter(position == "House") %>% #Only use house races for more accurate comparison
   group_by(race) %>%
-  count(gender) %>%
+  count(gender) %>% #Count the number of each gender used per race survey
   spread(gender, n) %>%
-  select(- `[DO NOT READ] Don't know/Refused`) %>%
+  select(- `[DO NOT READ] Don't know/Refused`) %>% #Do not include refusals because not informative or impactful enough
   mutate(total = `Female` + `Male`,
-         percent_male = `Male` / total) %>%
+         percent_male = `Male` / total) %>% #Find the percent of polls with male respondents
   select(race, percent_male)
 
 count_partyid <- big_named %>% 
-  filter(position == "House") %>%
+  filter(position == "House") %>% #Only use house races for more accurate comparison
   group_by(race) %>%
-  count(partyid) %>%
+  count(partyid) %>% #Count the number of each party id used per race survey
   spread(partyid, n) %>%
-  select(- `[DO NOT READ] Don't know/Refused`, - `[DO NOT READ] Refused`, - `or as a member of another political party`) %>%
+  select(- `[DO NOT READ] Don't know/Refused`, - `[DO NOT READ] Refused`, - `or as a member of another political party`) %>% #Do not include refusals or other parties because not informative or impactful enough
   mutate(total = Democrat + `Independent (No party)` + Republican,
          percent_dem = Democrat / total,
          percent_rep = Republican / total,
-         percent_ind = `Independent (No party)` / total) %>%
+         percent_ind = `Independent (No party)` / total) %>% #Find the percent of polls with respondents who have Democratic, Republican, and Independent PartyID
   select(race, percent_dem, percent_rep, percent_ind)
 
+#Left join all potentially informative tables together to table of republican advantage
 mistakes_info <- mistakes %>%
   left_join(count_phone, by = "race") %>%
   left_join(count_raceth, by = "race") %>%
   left_join(count_gender, by = "race") %>%
   left_join(count_partyid, by = "race")
 
+mistakes_info_2 <- mistakes_info %>%
+  rename("Percent Cell (Phone)" = percent_cell, "Percent Male (Gender)" = percent_male,
+         "Percent White (Race/Ethnicity)" = percent_white, "Percent Black (Race/Ethnicity)" = percent_black, 
+         "Percent Hispanic (Race/Ethnicity)" = percent_hispanic, "Percent Asian (Race/Ethnicity)" = percent_asian,
+         "Percent Democrat (Party ID)" = percent_dem, "Percent Republican (Party ID)" = percent_rep,
+         "Percent Independent (Party ID)" = percent_ind) #Rename factors for clarity
+
+
+ggplot(mistakes_info_2, aes(x = rep_adv_difference, y = `Percent Cell (Phone)`)) +
+  geom_point() +
+  geom_smooth(method='lm')
