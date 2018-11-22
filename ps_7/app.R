@@ -141,12 +141,13 @@ mistakes_info <- mistakes %>%
   left_join(count_phone, by = "race") %>%
   left_join(count_raceth, by = "race") %>%
   left_join(count_gender, by = "race") %>%
-  left_join(count_partyid, by = "race")
+  left_join(count_partyid, by = "race") %>%
+  mutate(win_actual = case_when(win_actual == "R" ~ "Republican",
+                               win_actual == "D" ~ "Democrat"))
 
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-   
    # Application title
    titlePanel("Key 2018 Midterm Prediction Results: Factors for Mistakes"),
    
@@ -163,7 +164,28 @@ ui <- fluidPage(
       
       # Show a plot of the generated distribution
       mainPanel(
-         plotOutput("scatter")
+         plotOutput("scatter"),
+         h1("Summary"),
+         p("The scatter plots above compare factors polled in Upshot compared to an error index."),
+           
+         p("'Error in Republican Advantge' is calculated by subtracting the Predicted Republican
+           Advantage from the Actual Republican Advantage. This means that Democrats overperforming 
+           yields a NEGATIVE 'Error in Republican Advantge', while Democrats underperforming yields 
+           a POSITIVE 'Error in Republican Advantge'."),
+           
+          p("The more incorrect the Upshot's polling was, the higher the magnitude (absolute value)
+           of the 'Error in Republican Advantge'."),
+           
+          p("There are several factors included in this study to compare with 'Error in Republican Advantge'.
+           If there is a strong correlation between one of the factors studied and the 
+           'Error in Republican Advantge', then this factor aligns with mistakes in Upshot."),
+           
+          p("None of the factors offer strong models for polling errors. The largest magnitude
+           correlation is between the percent of people polled who were Democrats and `Error`.
+           This positive correlation could mean that polling more Democrats led to polls that
+           were overoptimistic for the Democrats."), 
+
+          p("However, this correlation does not imply any kind of causation.")
       )
    )
 )
